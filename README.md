@@ -1,4 +1,4 @@
-# Marrow (formerly SysScope, C++)
+# Marrow 
 
 macOS system monitor scaffold — **C++17 + Dear ImGui + GLFW + OpenGL**. No Swift.
 
