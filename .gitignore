@@ -1,0 +1,6 @@
+sysscope-app
+sysscope-helper
+sysscope-cli
+sysscope-tests
+*.o
+.DS_Store
