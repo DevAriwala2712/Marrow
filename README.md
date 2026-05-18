@@ -62,7 +62,12 @@ Uses vendored **ImGui** from `../imgui` (same as `mac_stats_gui`).
 - **CLI** (`sysscope-cli`): shares stub `HelperClient` until real IPC is wired.
 - **Ring buffer**: `IRingBufferStore` + SQLite implementation.
 
-Real collectors (powermetrics, FSEvents, Network Extension, etc.) plug in by implementing `IMetricProvider` in the helper.
+Real collectors live in `src/helper/providers/` and run inside `sysscope-helper` (1 Hz Unix socket at `~/Library/Application Support/SysScope/helper.sock`). Start the helper, then the app/CLI use live data; otherwise they fall back to stubs.
+
+```bash
+./sysscope-helper &    # background daemon
+./sysscope-cli ping    # 0.2.0-cpp-helper
+```
 
 ## Targets (original spec → C++)
 
