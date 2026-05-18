@@ -3,7 +3,7 @@
 #include "sysscope/ipc.hpp"
 #include "sysscope/metric_provider.hpp"
 #include "sysscope/ring_buffer.hpp"
-#include "sysscope/stub_providers.hpp"
+#include "sysscope/provider_factory.hpp"
 #include "sysscope/types.hpp"
 
 #include <deque>

@@ -1,3 +1,4 @@
+third_party/nlohmann/json.hpp
 sysscope-app
 sysscope-helper
 sysscope-cli

@@ -1,4 +1,5 @@
 #include "sysscope/anomaly.hpp"
+#include "sysscope/metrics_codec.hpp"
 #include "sysscope/ring_buffer.hpp"
 #include "sysscope/types.hpp"
 #include "sysscope/util.hpp"
@@ -38,9 +39,58 @@ static void test_ring_buffer() {
     std::filesystem::remove(path);
 }
 
+static void test_thermal_codec_roundtrip() {
+    sysscope::MetricsSnapshot snap;
+    snap.timestamp = sysscope::now_seconds();
+    snap.has_thermal = true;
+    snap.thermal.clusters = {
+        {"P-Core", 46.5, 72.0, 4.3},
+        {"E-Core", 22.0, 61.5, 1.2},
+    };
+    snap.thermal.gpu_utilization_percent = 34.0;
+    snap.thermal.ane_utilization_percent = 9.5;
+    snap.thermal.cpu_die_temp_celsius = 78.0;
+    snap.thermal.gpu_die_temp_celsius = 66.0;
+    snap.thermal.fan_rpm = 3250;
+    snap.thermal.die_temperature_grid = {{41.0, 42.5, 44.0}, {43.0, 46.5, 49.0}};
+
+    sysscope::XpcResponse resp;
+    resp.kind = sysscope::XpcResponseKind::Snapshot;
+    resp.snapshot = snap;
+
+    const auto encoded = sysscope::encode_response(resp);
+    const auto decoded = sysscope::decode_response(encoded);
+    EXPECT(decoded.has_value(), "thermal roundtrip decodes");
+    EXPECT(decoded->kind == sysscope::XpcResponseKind::Snapshot, "thermal roundtrip kind");
+    EXPECT(decoded->snapshot.has_thermal, "thermal flag preserved");
+    EXPECT(decoded->snapshot.thermal.die_temperature_grid.size() == 2, "grid row count preserved");
+    EXPECT(decoded->snapshot.thermal.die_temperature_grid[0].size() == 3, "grid col count preserved");
+    EXPECT(decoded->snapshot.thermal.die_temperature_grid[1][2] == 49.0, "grid cell preserved");
+    EXPECT(decoded->snapshot.thermal.fan_rpm == 3250, "fan preserved");
+}
+
+static void test_thermal_codec_partial_grid() {
+    sysscope::MetricsSnapshot snap;
+    snap.has_thermal = true;
+    snap.thermal.die_temperature_grid = {{}, {39.0, 40.0}, {}};
+
+    sysscope::XpcResponse resp;
+    resp.kind = sysscope::XpcResponseKind::Snapshot;
+    resp.snapshot = snap;
+
+    const auto decoded = sysscope::decode_response(sysscope::encode_response(resp));
+    EXPECT(decoded.has_value(), "partial grid decodes");
+    EXPECT(decoded->snapshot.thermal.die_temperature_grid.size() == 3, "partial grid row count preserved");
+    EXPECT(decoded->snapshot.thermal.die_temperature_grid[0].empty(), "empty first row preserved");
+    EXPECT(decoded->snapshot.thermal.die_temperature_grid[1].size() == 2, "second row preserved");
+    EXPECT(decoded->snapshot.thermal.die_temperature_grid[2].empty(), "empty third row preserved");
+}
+
 int main() {
     test_anomaly();
     test_ring_buffer();
+    test_thermal_codec_roundtrip();
+    test_thermal_codec_partial_grid();
     if (failures == 0) std::printf("All tests passed.\n");
     else std::printf("%d test(s) failed.\n", failures);
     return failures == 0 ? 0 : 1;

@@ -41,6 +41,7 @@ public:
 
 private:
     MetricAggregator aggregator_;
+    int socket_fd_ = -1;
     bool connected_ = false;
 };
 

@@ -3,11 +3,100 @@
 #include "imgui/imgui.h"
 
 #include <algorithm>
+#include <cstdlib>
+#include <cctype>
 #include <cstdio>
 #include <filesystem>
+#include <limits>
 #include <vector>
 
 namespace sysscope {
+
+namespace {
+
+static ImU32 thermal_color(double norm) {
+    norm = std::clamp(norm, 0.0, 1.0);
+    const ImVec4 color = ImColor::HSV(static_cast<float>((1.0 - norm) * 0.68), 0.9f, 0.98f);
+    return ImGui::ColorConvertFloat4ToU32(color);
+}
+
+static void draw_metric_card(const char* label, const std::string& value, const ImVec4& tint) {
+    ImGui::BeginGroup();
+    ImGui::TextColored(tint, "%s", label);
+    ImGui::TextUnformatted(value.c_str());
+    ImGui::EndGroup();
+}
+
+static void draw_heatmap_grid(const std::vector<std::vector<double>>& grid) {
+    size_t rows = grid.size();
+    size_t cols = 0;
+    size_t value_count = 0;
+    double min_t = std::numeric_limits<double>::max();
+    double max_t = std::numeric_limits<double>::lowest();
+    double sum_t = 0.0;
+
+    for (const auto& row : grid) {
+        cols = std::max(cols, row.size());
+        for (double value : row) {
+            min_t = std::min(min_t, value);
+            max_t = std::max(max_t, value);
+            sum_t += value;
+            ++value_count;
+        }
+    }
+
+    if (rows == 0 || cols == 0 || value_count == 0) {
+        ImGui::TextDisabled("Heatmap is waiting for temperature samples.");
+        return;
+    }
+
+    ImGui::Text("Grid %zux%zu  min %.1f C  max %.1f C  avg %.1f C",
+                rows, cols, min_t, max_t, sum_t / static_cast<double>(value_count));
+    ImGui::Spacing();
+
+    const float avail_width = std::max(1.0f, ImGui::GetContentRegionAvail().x);
+    const float cell_size = std::clamp(avail_width / static_cast<float>(cols), 15.0f, 30.0f);
+    const float heatmap_width = cell_size * static_cast<float>(cols);
+    const float heatmap_height = cell_size * static_cast<float>(rows);
+    const ImVec2 origin = ImGui::GetCursorScreenPos();
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    const ImU32 background = ImGui::GetColorU32(ImGuiCol_FrameBg);
+    const ImU32 border = ImGui::GetColorU32(ImGuiCol_Border);
+
+    draw_list->AddRectFilled(origin, ImVec2(origin.x + heatmap_width, origin.y + heatmap_height), background, 8.0f);
+
+    for (size_t r = 0; r < rows; ++r) {
+        for (size_t c = 0; c < grid[r].size(); ++c) {
+            const double value = grid[r][c];
+            const double norm = max_t > min_t ? (value - min_t) / (max_t - min_t) : 0.5;
+            const ImVec2 cell_min(origin.x + static_cast<float>(c) * cell_size + 1.0f,
+                                  origin.y + static_cast<float>(r) * cell_size + 1.0f);
+            const ImVec2 cell_max(cell_min.x + cell_size - 2.0f, cell_min.y + cell_size - 2.0f);
+            draw_list->AddRectFilled(cell_min, cell_max, thermal_color(norm), 4.0f);
+            draw_list->AddRect(cell_min, cell_max, border, 4.0f);
+        }
+    }
+
+    ImGui::Dummy(ImVec2(heatmap_width, heatmap_height));
+    ImGui::Spacing();
+
+    const float legend_width = std::min(heatmap_width, std::max(180.0f, heatmap_width));
+    const float legend_height = 12.0f;
+    const ImVec2 legend_origin = ImGui::GetCursorScreenPos();
+    const int segments = 24;
+    for (int i = 0; i < segments; ++i) {
+        const float x0 = legend_origin.x + (legend_width * i) / segments;
+        const float x1 = legend_origin.x + (legend_width * (i + 1)) / segments;
+        draw_list->AddRectFilled(ImVec2(x0, legend_origin.y), ImVec2(x1, legend_origin.y + legend_height),
+                                 thermal_color(static_cast<double>(i) / (segments - 1)));
+    }
+    draw_list->AddRect(legend_origin,
+                       ImVec2(legend_origin.x + legend_width, legend_origin.y + legend_height), border, 4.0f);
+    ImGui::Dummy(ImVec2(legend_width, legend_height));
+    ImGui::TextDisabled("Cold -> Hot");
+}
+
+}  // namespace
 
 AppState::AppState() {
     const auto dir = std::filesystem::path(std::getenv("HOME") ? std::getenv("HOME") : "/tmp") /
@@ -18,9 +107,11 @@ AppState::AppState() {
 }
 
 void AppState::start() {
-    aggregator_.set_providers(make_stub_providers());
     helper_.connect();
     helper_connected = true;
+    if (helper_.use_stubs) {
+        aggregator_.set_providers(make_stub_providers());
+    }
     helper_version = helper_.send({XpcRequestKind::Ping}).version;
 }
 
@@ -28,7 +119,12 @@ void AppState::tick(double dt) {
     sample_accum_ += dt;
     if (sample_accum_ < 1.0) return;
     sample_accum_ = 0;
-    snapshot = aggregator_.collect();
+    if (helper_connected && !helper_.use_stubs) {
+        const auto resp = helper_.send({XpcRequestKind::FetchSnapshot});
+        if (resp.kind == XpcResponseKind::Snapshot) snapshot = resp.snapshot;
+    } else {
+        snapshot = aggregator_.collect();
+    }
     if (snapshot.has_cpu) {
         cpu_history.push_back(static_cast<float>(snapshot.cpu.total_used()));
         while (cpu_history.size() > 120) cpu_history.pop_front();
@@ -111,38 +207,59 @@ void AppState::draw_network() {
 }
 
 void AppState::draw_thermal() {
-    ImGui::Text("Thermal & Power (stub)");
-    if (!snapshot.has_thermal) return;
-    for (const auto& cl : snapshot.thermal.clusters) {
-        ImGui::BulletText("%s: %.0f%%  %.0f C  %.1f W", cl.name.c_str(), cl.utilization_percent,
-                          cl.temperature_celsius, cl.estimated_watts);
+    ImGui::Text("Thermal & Power");
+    ImGui::TextDisabled("Die temperatures, cluster load, and the active heatmap");
+    if (!snapshot.has_thermal) {
+        ImGui::Spacing();
+        ImGui::TextDisabled("Waiting for thermal samples...");
+        return;
     }
-    ImGui::Text("GPU %.0f%%  ANE %.0f%%", snapshot.thermal.gpu_utilization_percent,
-                snapshot.thermal.ane_utilization_percent);
-    const auto& g = snapshot.thermal.die_temperature_grid;
-    if (!g.empty() && !g[0].empty()) {
-        const int rows = static_cast<int>(g.size());
-        const int cols = static_cast<int>(g[0].size());
-        double min_t = g[0][0], max_t = g[0][0];
-        for (const auto& row : g)
-            for (double v : row) {
-                min_t = std::min(min_t, v);
-                max_t = std::max(max_t, v);
-            }
-        ImDrawList* dl = ImGui::GetWindowDrawList();
-        ImVec2 p = ImGui::GetCursorScreenPos();
-        const float cw = 18.f, ch = 18.f;
-        for (int r = 0; r < rows; ++r) {
-            for (int c = 0; c < cols; ++c) {
-                const double norm = (g[r][c] - min_t) / std::max(max_t - min_t, 0.001);
-                const ImU32 col = ImColor(static_cast<int>((1.0 - norm) * 80 + 100), 80,
-                                            static_cast<int>(norm * 220 + 35));
-                dl->AddRectFilled(ImVec2(p.x + c * cw, p.y + r * ch),
-                                  ImVec2(p.x + (c + 1) * cw - 1, p.y + (r + 1) * ch - 1), col);
-            }
+
+    if (ImGui::BeginTable("thermal_cards", 4,
+                          ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoPadInnerX)) {
+        ImGui::TableSetupColumn("CPU die");
+        ImGui::TableSetupColumn("GPU die");
+        ImGui::TableSetupColumn("GPU util");
+        ImGui::TableSetupColumn("Fan");
+        ImGui::TableNextColumn();
+        draw_metric_card("CPU die",
+                         std::to_string(static_cast<int>(snapshot.thermal.cpu_die_temp_celsius)) + " C",
+                         ImVec4(0.95f, 0.60f, 0.30f, 1.0f));
+        ImGui::TableNextColumn();
+        draw_metric_card("GPU die",
+                         std::to_string(static_cast<int>(snapshot.thermal.gpu_die_temp_celsius)) + " C",
+                         ImVec4(0.85f, 0.55f, 0.95f, 1.0f));
+        ImGui::TableNextColumn();
+        draw_metric_card("GPU util",
+                         std::to_string(static_cast<int>(snapshot.thermal.gpu_utilization_percent)) + "%",
+                         ImVec4(0.35f, 0.75f, 1.0f, 1.0f));
+        ImGui::TableNextColumn();
+        if (snapshot.thermal.fan_rpm > 0) {
+            draw_metric_card("Fan", std::to_string(snapshot.thermal.fan_rpm) + " RPM",
+                             ImVec4(0.55f, 0.95f, 0.70f, 1.0f));
+        } else {
+            draw_metric_card("Fan", "n/a", ImVec4(0.65f, 0.65f, 0.65f, 1.0f));
         }
-        ImGui::Dummy(ImVec2(cols * cw, rows * ch));
+        ImGui::EndTable();
     }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    if (!snapshot.thermal.clusters.empty()) {
+        ImGui::Text("Clusters");
+        for (const auto& cl : snapshot.thermal.clusters) {
+            ImGui::BulletText("%s: %.0f%%  %.0f C  %.1f W", cl.name.c_str(), cl.utilization_percent,
+                              cl.temperature_celsius, cl.estimated_watts);
+        }
+        ImGui::Spacing();
+    }
+
+    ImGui::Text("Accelerators: GPU %.0f%%  ANE %.0f%%", snapshot.thermal.gpu_utilization_percent,
+                snapshot.thermal.ane_utilization_percent);
+    ImGui::Spacing();
+    draw_heatmap_grid(snapshot.thermal.die_temperature_grid);
 }
 
 void AppState::draw_disk() {
