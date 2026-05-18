@@ -18,14 +18,7 @@ While `btop` is a fantastic terminal-based system monitor, Marrow provides sever
 Requires: `g++`, GLFW, SQLite3, OpenGL (Homebrew: `brew install glfw sqlite`).
 
 ```bash
-cd SysScope
-make          # sysscope-app, sysscope-helper, sysscope-cli
-make test
-```
-
-Run the GUI:
-
-```bash
+make sysscope-app
 ./sysscope-app
 ```
 
