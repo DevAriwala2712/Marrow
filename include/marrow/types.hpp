@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 enum class MetricKind {
     Cpu,
@@ -120,4 +120,4 @@ struct MetricsSnapshot {
     ProcessGraphSnapshot process_graph;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

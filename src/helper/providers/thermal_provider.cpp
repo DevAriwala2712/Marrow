@@ -1,4 +1,4 @@
-#include "sysscope/providers/thermal_provider.hpp"
+#include "marrow/providers/thermal_provider.hpp"
 
 #include <json.hpp>
 
@@ -10,7 +10,7 @@
 #include <initializer_list>
 #include <unistd.h>
 
-namespace sysscope {
+namespace marrow {
 
 using json = nlohmann::json;
 
@@ -200,4 +200,4 @@ void ThermalProvider::reader_loop() {
     pclose(pipe);
 }
 
-}  // namespace sysscope
+}  // namespace marrow

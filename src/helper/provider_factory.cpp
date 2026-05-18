@@ -1,12 +1,12 @@
-#include "sysscope/provider_factory.hpp"
-#include "sysscope/providers/cpu_provider.hpp"
-#include "sysscope/providers/disk_provider.hpp"
-#include "sysscope/providers/memory_provider.hpp"
-#include "sysscope/providers/network_provider.hpp"
-#include "sysscope/providers/process_provider.hpp"
-#include "sysscope/providers/thermal_provider.hpp"
+#include "marrow/provider_factory.hpp"
+#include "marrow/providers/cpu_provider.hpp"
+#include "marrow/providers/disk_provider.hpp"
+#include "marrow/providers/memory_provider.hpp"
+#include "marrow/providers/network_provider.hpp"
+#include "marrow/providers/process_provider.hpp"
+#include "marrow/providers/thermal_provider.hpp"
 
-namespace sysscope {
+namespace marrow {
 
 std::vector<MetricProviderPtr> make_real_providers() {
     return {
@@ -19,4 +19,4 @@ std::vector<MetricProviderPtr> make_real_providers() {
     };
 }
 
-}  // namespace sysscope
+}  // namespace marrow

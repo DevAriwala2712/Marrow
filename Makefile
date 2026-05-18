@@ -25,21 +25,24 @@ HELPER_OBJS = $(HELPER_SRCS:.cpp=.o) $(HELPER_MM:.mm=.o)
 
 .PHONY: all clean test
 
-all: sysscope-app sysscope-helper sysscope-cli
+ASSETS = assets/logo.png
+APP_OBJS = src/app/main.o src/app/app_state.o src/app/ui_assets.o $(CORE_OBJS) $(IMGUI_SRCS:.cpp=.o)
 
-sysscope-app: src/app/main.o src/app/app_state.o $(CORE_OBJS) $(IMGUI_SRCS:.cpp=.o)
-	$(CXX) $^ $(LDFLAGS_COMMON) -o $@
+all: marrow-app marrow-helper marrow-cli
 
-sysscope-helper: $(HELPER_OBJS) $(CORE_OBJS)
+marrow-app: $(APP_OBJS) $(ASSETS)
+	$(CXX) $(APP_OBJS) $(LDFLAGS_COMMON) -o $@
+
+marrow-helper: $(HELPER_OBJS) $(CORE_OBJS)
 	$(CXX) $^ $(LDFLAGS_HELPER) -o $@
 
-sysscope-cli: src/cli/main.o $(CORE_OBJS)
+marrow-cli: src/cli/main.o $(CORE_OBJS)
 	$(CXX) $^ -lsqlite3 -o $@
 
-test: sysscope-tests
-	./sysscope-tests
+test: marrow-tests
+	./marrow-tests
 
-sysscope-tests: tests/test_main.o $(CORE_OBJS)
+marrow-tests: tests/test_main.o $(CORE_OBJS)
 	$(CXX) $^ -lsqlite3 -o $@
 
 %.o: %.cpp
@@ -52,7 +55,7 @@ $(IMGUI_DIR)/%.o: $(IMGUI_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f sysscope-app sysscope-helper sysscope-cli sysscope-tests \
+	rm -f marrow-app marrow-helper marrow-cli marrow-tests \
 		src/app/*.o src/helper/*.o src/helper/providers/*.o src/cli/*.o \
 		src/common/*.o src/storage/*.o tests/*.o \
 		$(IMGUI_DIR)/*.o $(IMGUI_DIR)/backends/*.o

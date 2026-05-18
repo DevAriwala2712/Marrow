@@ -1,4 +1,4 @@
-#include "sysscope/metrics_codec.hpp"
+#include "marrow/metrics_codec.hpp"
 
 #include <json.hpp>
 
@@ -11,14 +11,14 @@
 #include <unistd.h>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 using json = nlohmann::json;
 
 std::string default_socket_path() {
     const char* home = std::getenv("HOME");
-    if (!home) return "/tmp/sysscope-helper.sock";
-    return std::string(home) + "/Library/Application Support/SysScope/helper.sock";
+    if (!home) return "/tmp/marrow-helper.sock";
+    return std::string(home) + "/Library/Application Support/Marrow/helper.sock";
 }
 
 static json cpu_to_json(const CpuMetrics& c) {
@@ -270,4 +270,4 @@ std::optional<std::string> read_frame(int fd) {
     return buf;
 }
 
-}  // namespace sysscope
+}  // namespace marrow

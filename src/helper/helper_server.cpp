@@ -1,5 +1,5 @@
-#include "sysscope/helper_server.hpp"
-#include "sysscope/metrics_codec.hpp"
+#include "marrow/helper_server.hpp"
+#include "marrow/metrics_codec.hpp"
 
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -9,7 +9,7 @@
 #include <cstring>
 #include <filesystem>
 
-namespace sysscope {
+namespace marrow {
 
 HelperServer::HelperServer(std::string socket_path) : socket_path_(std::move(socket_path)) {}
 
@@ -102,4 +102,4 @@ void HelperServer::client_loop(int client_fd) {
     close(client_fd);
 }
 
-}  // namespace sysscope
+}  // namespace marrow

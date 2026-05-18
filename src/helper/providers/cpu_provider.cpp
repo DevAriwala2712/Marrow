@@ -1,5 +1,5 @@
-#include "sysscope/providers/cpu_provider.hpp"
-#include "sysscope/util.hpp"
+#include "marrow/providers/cpu_provider.hpp"
+#include "marrow/util.hpp"
 
 #include <mach/mach_host.h>
 #include <mach/mach_init.h>
@@ -11,7 +11,7 @@
 #include <cstring>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 namespace {
 
@@ -122,4 +122,4 @@ void CpuProvider::tick(MetricsSnapshot& snapshot) {
     last_sample_time_ = now_seconds();
 }
 
-}  // namespace sysscope
+}  // namespace marrow

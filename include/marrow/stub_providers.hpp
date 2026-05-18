@@ -1,11 +1,11 @@
 #pragma once
 
-#include "sysscope/metric_provider.hpp"
-#include "sysscope/util.hpp"
+#include "marrow/metric_provider.hpp"
+#include "marrow/util.hpp"
 
 #include <cmath>
 
-namespace sysscope {
+namespace marrow {
 
 class StubCpuProvider : public IMetricProvider {
 public:
@@ -63,8 +63,8 @@ public:
     MetricKind kind() const override { return MetricKind::Disk; }
     void tick(MetricsSnapshot& s) override {
         static int idx = 0;
-        const char* paths[] = {"/var/log/system.log", "/Users/dev/Library/Caches", "/tmp/sysscope-stub"};
-        const char* names[] = {"logd", "backupd", "find", "SysScope"};
+        const char* paths[] = {"/var/log/system.log", "/Users/dev/Library/Caches", "/tmp/marrow-stub"};
+        const char* names[] = {"logd", "backupd", "find", "Marrow"};
         DiskIOEvent ev;
         ev.process_pid = static_cast<std::int32_t>(rand_range(100, 9999));
         ev.process_name = names[idx % 4];
@@ -111,8 +111,8 @@ public:
         s.process_graph.nodes = {
             {1, "launchd", -1, 120, 4},
             {100, "WindowServer", 1, 340, 12},
-            {200, "SysScope", 1, 45, 2},
-            {201, "SysScopeHelper", 200, 28, 1},
+            {200, "Marrow", 1, 45, 2},
+            {201, "MarrowHelper", 200, 28, 1},
             {300, "Safari", 1, 890, 6},
             {301, "com.apple.WebKit", 300, 210, 3},
         };
@@ -120,4 +120,4 @@ public:
     }
 };
 
-}  // namespace sysscope
+}  // namespace marrow

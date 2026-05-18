@@ -1,8 +1,8 @@
 #pragma once
 
-#include "sysscope/metric_provider.hpp"
+#include "marrow/metric_provider.hpp"
 
-namespace sysscope {
+namespace marrow {
 
 class CpuProvider : public IMetricProvider {
 public:
@@ -17,4 +17,4 @@ private:
     double last_sample_time_ = 0;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "sysscope/metric_provider.hpp"
+#include "marrow/metric_provider.hpp"
 
 #include <atomic>
 #include <mutex>
 #include <string>
 #include <thread>
 
-namespace sysscope {
+namespace marrow {
 
 class ThermalProvider : public IMetricProvider {
 public:
@@ -27,4 +27,4 @@ private:
     bool has_data_ = false;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

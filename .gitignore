@@ -1,7 +1,7 @@
 third_party/nlohmann/json.hpp
-sysscope-app
-sysscope-helper
-sysscope-cli
-sysscope-tests
+marrow-app
+marrow-helper
+marrow-cli
+marrow-tests
 *.o
 .DS_Store

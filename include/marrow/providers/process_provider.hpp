@@ -1,11 +1,11 @@
 #pragma once
 
-#include "sysscope/metric_provider.hpp"
+#include "marrow/metric_provider.hpp"
 
 #include <cstdint>
 #include <unordered_map>
 
-namespace sysscope {
+namespace marrow {
 
 class ProcessProvider : public IMetricProvider {
 public:
@@ -22,4 +22,4 @@ private:
     double last_wall_ = 0;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

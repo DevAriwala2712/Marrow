@@ -1,8 +1,8 @@
 #pragma once
 
-#include "sysscope/metric_provider.hpp"
+#include "marrow/metric_provider.hpp"
 
-namespace sysscope {
+namespace marrow {
 
 class MemoryProvider : public IMetricProvider {
 public:
@@ -10,4 +10,4 @@ public:
     void tick(MetricsSnapshot& snapshot) override;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

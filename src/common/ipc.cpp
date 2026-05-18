@@ -1,6 +1,6 @@
-#include "sysscope/ipc.hpp"
-#include "sysscope/metrics_codec.hpp"
-#include "sysscope/provider_factory.hpp"
+#include "marrow/ipc.hpp"
+#include "marrow/metrics_codec.hpp"
+#include "marrow/provider_factory.hpp"
 
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -8,7 +8,7 @@
 
 #include <cstring>
 
-namespace sysscope {
+namespace marrow {
 
 namespace {
 
@@ -89,4 +89,4 @@ XpcResponse HelperClient::send(const XpcRequest& req) {
     return resp;
 }
 
-}  // namespace sysscope
+}  // namespace marrow

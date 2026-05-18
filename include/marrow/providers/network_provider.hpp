@@ -1,11 +1,11 @@
 #pragma once
 
-#include "sysscope/metric_provider.hpp"
+#include "marrow/metric_provider.hpp"
 
 #include <cstdint>
 #include <string>
 
-namespace sysscope {
+namespace marrow {
 
 class NetworkProvider : public IMetricProvider {
 public:
@@ -20,4 +20,4 @@ private:
     std::string iface_;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

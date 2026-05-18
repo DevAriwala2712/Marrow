@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <random>
 
-namespace sysscope {
+namespace marrow {
 
 inline double now_seconds() {
     using clock = std::chrono::system_clock;
@@ -18,4 +18,4 @@ inline double rand_range(double lo, double hi) {
     return dist(gen);
 }
 
-}  // namespace sysscope
+}  // namespace marrow

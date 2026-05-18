@@ -1,10 +1,10 @@
-#include "sysscope/providers/memory_provider.hpp"
+#include "marrow/providers/memory_provider.hpp"
 
 #include <mach/mach.h>
 #include <mach/mach_host.h>
 #include <sys/sysctl.h>
 
-namespace sysscope {
+namespace marrow {
 
 void MemoryProvider::tick(MetricsSnapshot& snapshot) {
     mach_port_t host = mach_host_self();
@@ -44,4 +44,4 @@ void MemoryProvider::tick(MetricsSnapshot& snapshot) {
     snapshot.has_memory = true;
 }
 
-}  // namespace sysscope
+}  // namespace marrow

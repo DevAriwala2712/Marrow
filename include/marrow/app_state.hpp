@@ -1,16 +1,18 @@
 #pragma once
 
-#include "sysscope/ipc.hpp"
-#include "sysscope/metric_provider.hpp"
-#include "sysscope/ring_buffer.hpp"
-#include "sysscope/provider_factory.hpp"
-#include "sysscope/types.hpp"
+#include "marrow/ipc.hpp"
+#include "marrow/metric_provider.hpp"
+#include "marrow/ring_buffer.hpp"
+#include "marrow/provider_factory.hpp"
+#include "marrow/types.hpp"
+
+#include "imgui/imgui.h"
 
 #include <deque>
 #include <memory>
 #include <string>
 
-namespace sysscope {
+namespace marrow {
 
 enum class AppSection {
     Process,
@@ -41,6 +43,8 @@ public:
     void start();
     void tick(double dt);
     void draw();
+    void set_sidebar_logo(ImTextureID texture);
+    void set_fonts(ImFont* body, ImFont* value, ImFont* label, ImFont* header);
 
     MetricsSnapshot snapshot;
     AppSection section = AppSection::Process;
@@ -64,6 +68,11 @@ private:
     HelperClient helper_;
     std::unique_ptr<IRingBufferStore> ring_buffer_;
     double sample_accum_ = 0;
+    ImTextureID sidebar_logo_texture_ = 0;
+    ImFont* body_font_ = nullptr;
+    ImFont* value_font_ = nullptr;
+    ImFont* label_font_ = nullptr;
+    ImFont* header_font_ = nullptr;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

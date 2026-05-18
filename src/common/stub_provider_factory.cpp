@@ -1,7 +1,7 @@
-#include "sysscope/provider_factory.hpp"
-#include "sysscope/stub_providers.hpp"
+#include "marrow/provider_factory.hpp"
+#include "marrow/stub_providers.hpp"
 
-namespace sysscope {
+namespace marrow {
 
 std::vector<MetricProviderPtr> make_stub_providers() {
     return {
@@ -14,4 +14,4 @@ std::vector<MetricProviderPtr> make_stub_providers() {
     };
 }
 
-}  // namespace sysscope
+}  // namespace marrow

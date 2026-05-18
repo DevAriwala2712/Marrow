@@ -1,5 +1,5 @@
-#include "sysscope/providers/process_provider.hpp"
-#include "sysscope/util.hpp"
+#include "marrow/providers/process_provider.hpp"
+#include "marrow/util.hpp"
 
 #include <libproc.h>
 #include <sys/sysctl.h>
@@ -9,7 +9,7 @@
 #include <cstdio>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 namespace {
 
@@ -99,4 +99,4 @@ void ProcessProvider::tick(MetricsSnapshot& snapshot) {
     snapshot.has_process_graph = true;
 }
 
-}  // namespace sysscope
+}  // namespace marrow

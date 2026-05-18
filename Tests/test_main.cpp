@@ -1,8 +1,8 @@
-#include "sysscope/anomaly.hpp"
-#include "sysscope/metrics_codec.hpp"
-#include "sysscope/ring_buffer.hpp"
-#include "sysscope/types.hpp"
-#include "sysscope/util.hpp"
+#include "marrow/anomaly.hpp"
+#include "marrow/metrics_codec.hpp"
+#include "marrow/ring_buffer.hpp"
+#include "marrow/types.hpp"
+#include "marrow/util.hpp"
 
 #include <cstdio>
 #include <filesystem>
@@ -18,19 +18,19 @@ static int failures = 0;
     } while (0)
 
 static void test_anomaly() {
-    sysscope::AnomalyDetector det(0.05, 2.5);
+    marrow::AnomalyDetector det(0.05, 2.5);
     EXPECT(det.observe(10) == std::nullopt, "first no alert");
     for (int i = 0; i < 50; ++i) det.observe(10);
     EXPECT(det.observe(10000).has_value(), "spike alerts");
 }
 
 static void test_ring_buffer() {
-    const auto path = std::filesystem::temp_directory_path() / "sysscope-cpp-test.sqlite";
+    const auto path = std::filesystem::temp_directory_path() / "marrow-cpp-test.sqlite";
     std::filesystem::remove(path);
-    auto store = sysscope::make_sqlite_ring_buffer();
+    auto store = marrow::make_sqlite_ring_buffer();
     EXPECT(store->open(path.string()), "open db");
-    sysscope::MetricsSnapshot snap;
-    snap.timestamp = sysscope::now_seconds();
+    marrow::MetricsSnapshot snap;
+    snap.timestamp = marrow::now_seconds();
     snap.has_cpu = true;
     snap.cpu.user_percent = 10;
     EXPECT(store->append(snap), "append");
@@ -40,8 +40,8 @@ static void test_ring_buffer() {
 }
 
 static void test_thermal_codec_roundtrip() {
-    sysscope::MetricsSnapshot snap;
-    snap.timestamp = sysscope::now_seconds();
+    marrow::MetricsSnapshot snap;
+    snap.timestamp = marrow::now_seconds();
     snap.has_thermal = true;
     snap.thermal.clusters = {
         {"P-Core", 46.5, 72.0, 4.3},
@@ -54,14 +54,14 @@ static void test_thermal_codec_roundtrip() {
     snap.thermal.fan_rpm = 3250;
     snap.thermal.die_temperature_grid = {{41.0, 42.5, 44.0}, {43.0, 46.5, 49.0}};
 
-    sysscope::XpcResponse resp;
-    resp.kind = sysscope::XpcResponseKind::Snapshot;
+    marrow::XpcResponse resp;
+    resp.kind = marrow::XpcResponseKind::Snapshot;
     resp.snapshot = snap;
 
-    const auto encoded = sysscope::encode_response(resp);
-    const auto decoded = sysscope::decode_response(encoded);
+    const auto encoded = marrow::encode_response(resp);
+    const auto decoded = marrow::decode_response(encoded);
     EXPECT(decoded.has_value(), "thermal roundtrip decodes");
-    EXPECT(decoded->kind == sysscope::XpcResponseKind::Snapshot, "thermal roundtrip kind");
+    EXPECT(decoded->kind == marrow::XpcResponseKind::Snapshot, "thermal roundtrip kind");
     EXPECT(decoded->snapshot.has_thermal, "thermal flag preserved");
     EXPECT(decoded->snapshot.thermal.die_temperature_grid.size() == 2, "grid row count preserved");
     EXPECT(decoded->snapshot.thermal.die_temperature_grid[0].size() == 3, "grid col count preserved");
@@ -70,15 +70,15 @@ static void test_thermal_codec_roundtrip() {
 }
 
 static void test_thermal_codec_partial_grid() {
-    sysscope::MetricsSnapshot snap;
+    marrow::MetricsSnapshot snap;
     snap.has_thermal = true;
     snap.thermal.die_temperature_grid = {{}, {39.0, 40.0}, {}};
 
-    sysscope::XpcResponse resp;
-    resp.kind = sysscope::XpcResponseKind::Snapshot;
+    marrow::XpcResponse resp;
+    resp.kind = marrow::XpcResponseKind::Snapshot;
     resp.snapshot = snap;
 
-    const auto decoded = sysscope::decode_response(sysscope::encode_response(resp));
+    const auto decoded = marrow::decode_response(marrow::encode_response(resp));
     EXPECT(decoded.has_value(), "partial grid decodes");
     EXPECT(decoded->snapshot.thermal.die_temperature_grid.size() == 3, "partial grid row count preserved");
     EXPECT(decoded->snapshot.thermal.die_temperature_grid[0].empty(), "empty first row preserved");

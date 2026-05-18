@@ -1,5 +1,5 @@
-#include "sysscope/providers/network_provider.hpp"
-#include "sysscope/util.hpp"
+#include "marrow/providers/network_provider.hpp"
+#include "marrow/util.hpp"
 
 #include <net/if.h>
 #include <net/route.h>
@@ -8,7 +8,7 @@
 #include <cstring>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 void NetworkProvider::tick(MetricsSnapshot& snapshot) {
     int mib[6] = {CTL_NET, AF_ROUTE, 0, 0, NET_RT_IFLIST2, 0};
@@ -62,4 +62,4 @@ void NetworkProvider::tick(MetricsSnapshot& snapshot) {
     snapshot.has_network = true;
 }
 
-}  // namespace sysscope
+}  // namespace marrow

@@ -1,5 +1,5 @@
-#include "sysscope/ring_buffer.hpp"
-#include "sysscope/util.hpp"
+#include "marrow/ring_buffer.hpp"
+#include "marrow/util.hpp"
 
 #include <sqlite3.h>
 
@@ -11,7 +11,7 @@
 #define SQLITE_TRANSIENT reinterpret_cast<void(*)(void*)>(-1)
 #endif
 
-namespace sysscope {
+namespace marrow {
 
 HistoryRange HistoryRange::last_minutes(int minutes) {
     const double end = now_seconds();
@@ -101,4 +101,4 @@ std::unique_ptr<IRingBufferStore> make_sqlite_ring_buffer(RingBufferConfig confi
     return std::make_unique<SQLiteRingBufferStore>(config);
 }
 
-}  // namespace sysscope
+}  // namespace marrow

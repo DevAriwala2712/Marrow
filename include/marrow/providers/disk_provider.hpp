@@ -1,10 +1,10 @@
 #pragma once
 
-#include "sysscope/metric_provider.hpp"
+#include "marrow/metric_provider.hpp"
 
 #include <cstdint>
 
-namespace sysscope {
+namespace marrow {
 
 class DiskProvider : public IMetricProvider {
 public:
@@ -18,4 +18,4 @@ private:
     std::uint64_t prev_write_ = 0;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "sysscope/ipc.hpp"
-#include "sysscope/types.hpp"
+#include "marrow/ipc.hpp"
+#include "marrow/types.hpp"
 
 #include <optional>
 #include <string>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 std::string encode_request(const XpcRequest& req);
 std::string encode_response(const XpcResponse& resp);
@@ -20,4 +20,4 @@ std::string default_socket_path();
 bool write_frame(int fd, const std::string& payload);
 std::optional<std::string> read_frame(int fd);
 
-}  // namespace sysscope
+}  // namespace marrow

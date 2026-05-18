@@ -1,10 +1,10 @@
-#include "sysscope/providers/disk_provider.hpp"
-#include "sysscope/util.hpp"
+#include "marrow/providers/disk_provider.hpp"
+#include "marrow/util.hpp"
 
 #import <CoreFoundation/CoreFoundation.h>
 #import <IOKit/IOKitLib.h>
 
-namespace sysscope {
+namespace marrow {
 
 namespace {
 
@@ -53,4 +53,4 @@ void DiskProvider::tick(MetricsSnapshot& snapshot) {
     snapshot.has_disk = true;
 }
 
-}  // namespace sysscope
+}  // namespace marrow
