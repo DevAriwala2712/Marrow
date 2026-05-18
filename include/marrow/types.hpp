@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 enum class MetricKind {
     Cpu,
@@ -21,6 +21,7 @@ struct CpuMetrics {
     double idle_percent = 0;
     double p_core_percent = 0;
     double e_core_percent = 0;
+    std::vector<double> per_core_percent;
     double total_used() const { return user_percent + system_percent; }
 };
 
@@ -29,6 +30,8 @@ struct MemoryMetrics {
     std::uint64_t total_bytes = 0;
     std::uint64_t wired_bytes = 0;
     std::uint64_t compressed_bytes = 0;
+    std::uint64_t cached_bytes = 0;
+    std::uint64_t free_bytes = 0;
     double used_percent() const {
         return total_bytes ? (100.0 * used_bytes / total_bytes) : 0.0;
     }
@@ -50,6 +53,7 @@ struct NetworkConnection {
 struct NetworkMetrics {
     double bytes_in_per_sec = 0;
     double bytes_out_per_sec = 0;
+    std::string interface_name;
     std::vector<NetworkConnection> connections;
 };
 
@@ -79,6 +83,9 @@ struct ThermalMetrics {
     std::vector<ClusterThermal> clusters;
     double gpu_utilization_percent = 0;
     double ane_utilization_percent = 0;
+    double cpu_die_temp_celsius = 0;
+    double gpu_die_temp_celsius = 0;
+    int fan_rpm = -1;
     std::vector<std::vector<double>> die_temperature_grid;
 };
 
@@ -88,6 +95,9 @@ struct ProcessNode {
     std::int32_t parent_pid = -1;
     int open_fd_count = 0;
     int ipc_connection_count = 0;
+    double cpu_percent = 0;
+    std::uint64_t mem_bytes = 0;
+    std::string status;
 };
 
 struct ProcessGraphSnapshot {
@@ -110,4 +120,4 @@ struct MetricsSnapshot {
     ProcessGraphSnapshot process_graph;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

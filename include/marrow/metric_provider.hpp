@@ -1,12 +1,12 @@
 #pragma once
 
-#include "sysscope/types.hpp"
-#include "sysscope/util.hpp"
+#include "marrow/types.hpp"
+#include "marrow/util.hpp"
 
 #include <memory>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 class IMetricProvider {
 public:
@@ -41,4 +41,4 @@ private:
     std::vector<MetricProviderPtr> providers_;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

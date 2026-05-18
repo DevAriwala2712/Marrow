@@ -1,12 +1,12 @@
 #pragma once
 
-#include "sysscope/types.hpp"
+#include "marrow/types.hpp"
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 struct RingBufferConfig {
     int max_disk_bytes = 200 * 1024 * 1024;
@@ -32,4 +32,4 @@ public:
 
 std::unique_ptr<IRingBufferStore> make_sqlite_ring_buffer(RingBufferConfig config = {});
 
-}  // namespace sysscope
+}  // namespace marrow

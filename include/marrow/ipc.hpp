@@ -1,13 +1,13 @@
 #pragma once
 
-#include "sysscope/metric_provider.hpp"
-#include "sysscope/types.hpp"
+#include "marrow/metric_provider.hpp"
+#include "marrow/types.hpp"
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace sysscope {
+namespace marrow {
 
 enum class XpcRequestKind {
     Ping,
@@ -41,7 +41,8 @@ public:
 
 private:
     MetricAggregator aggregator_;
+    int socket_fd_ = -1;
     bool connected_ = false;
 };
 
-}  // namespace sysscope
+}  // namespace marrow

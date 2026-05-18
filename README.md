@@ -1,4 +1,4 @@
-# Marrow (formerly SysScope, C++)
+# Marrow 
 
 macOS system monitor scaffold — **C++17 + Dear ImGui + GLFW + OpenGL**. No Swift.
 
@@ -18,38 +18,31 @@ While `btop` is a fantastic terminal-based system monitor, Marrow provides sever
 Requires: `g++`, GLFW, SQLite3, OpenGL (Homebrew: `brew install glfw sqlite`).
 
 ```bash
-cd SysScope
-make          # sysscope-app, sysscope-helper, sysscope-cli
-make test
-```
-
-Run the GUI:
-
-```bash
-./sysscope-app
+make marrow-app
+./marrow-app
 ```
 
 CLI:
 
 ```bash
-./sysscope-cli ping
-./sysscope-cli --format prometheus
+./marrow-cli ping
+./marrow-cli --format prometheus
 ```
 
 Helper daemon (stub loop):
 
 ```bash
-./sysscope-helper
+./marrow-helper
 ```
 
 ## Layout
 
 | Path | Purpose |
 |------|---------|
-| `include/sysscope/` | Types, `IMetricProvider`, stubs, anomaly, IPC, ring buffer |
+| `include/marrow/` | Types, `IMetricProvider`, stubs, anomaly, IPC, ring buffer |
 | `src/app/` | ImGui main window + sidebar sections |
 | `src/helper/` | Privileged helper scaffold |
-| `src/cli/` | `sysscope` JSON/Prometheus CLI |
+| `src/cli/` | `marrow` JSON/Prometheus CLI |
 | `src/storage/` | SQLite ring buffer (200 MB / 30 min) |
 | `tests/` | Native test runner (`make test`) |
 
@@ -57,9 +50,9 @@ Uses vendored **ImGui** from `../imgui` (same as `mac_stats_gui`).
 
 ## Architecture
 
-- **GUI** (`sysscope-app`): unprivileged; stub metric providers by default.
-- **Helper** (`sysscope-helper`): placeholder for SMJobBless / IOKit / Endpoint Security.
-- **CLI** (`sysscope-cli`): shares stub `HelperClient` until real IPC is wired.
+- **GUI** (`marrow-app`): unprivileged; stub metric providers by default.
+- **Helper** (`marrow-helper`): placeholder for SMJobBless / IOKit / Endpoint Security.
+- **CLI** (`marrow-cli`): shares stub `HelperClient` until real IPC is wired.
 - **Ring buffer**: `IRingBufferStore` + SQLite implementation.
 
 Real collectors live in `src/helper/providers/` and run inside `sysscope-helper` (1 Hz Unix socket at `~/Library/Application Support/SysScope/helper.sock`). Start the helper, then the app/CLI use live data; otherwise they fall back to stubs.
@@ -75,8 +68,8 @@ Real collectors live in `src/helper/providers/` and run inside `sysscope-helper`
 |---------|--------|
 | Process / Network / Thermal / Disk / Timeline / Settings UI | Stub panels in ImGui |
 | Menubar sparklines | Inline CPU sparkline in app title bar |
-| MetricProvider + stubs | `include/sysscope/stub_providers.hpp` |
-| Typed IPC | `include/sysscope/ipc.hpp` (in-process stub) |
+| MetricProvider + stubs | `include/marrow/stub_providers.hpp` |
+| Typed IPC | `include/marrow/ipc.hpp` (in-process stub) |
 | Ring buffer DVR | SQLite store + Timeline scrub UI |
-| Anomaly Z-score | `include/sysscope/anomaly.hpp` + tests |
+| Anomaly Z-score | `include/marrow/anomaly.hpp` + tests |
 | Metal 60fps charts | Use ImGui plots now; Metal can replace later |

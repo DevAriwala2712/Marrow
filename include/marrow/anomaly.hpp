@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace sysscope {
+namespace marrow {
 
 struct AnomalyAlert {
     std::string process_name;
@@ -79,4 +79,4 @@ private:
     std::unordered_map<std::string, AnomalyDetector> detectors_;
 };
 
-}  // namespace sysscope
+}  // namespace marrow
