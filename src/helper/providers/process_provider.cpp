@@ -47,6 +47,7 @@ void ProcessProvider::tick(MetricsSnapshot& snapshot) {
     const double wall_dt = (last_wall_ > 0) ? (now - last_wall_) : 0;
     last_wall_ = now;
 
+    decltype(prev_) current;
     std::vector<ProcessNode> nodes;
     nodes.reserve(static_cast<size_t>(count));
 
@@ -66,7 +67,8 @@ void ProcessProvider::tick(MetricsSnapshot& snapshot) {
         double cpu_pct = 0;
         if (wall_dt > 0.01) {
             const auto it = prev_.find(pid);
-            if (it != prev_.end() && it->second.at > 0) {
+            if (it != prev_.end() && ti.pti_total_user >= it->second.user_ns &&
+                ti.pti_total_system >= it->second.sys_ns) {
                 static int ncpu = 0;
                 if (ncpu == 0) {
                     size_t sz = sizeof(ncpu);
@@ -79,7 +81,7 @@ void ProcessProvider::tick(MetricsSnapshot& snapshot) {
                 cpu_pct = std::min(100.0 * dcpu / (wall_dt * ncpu), 999.0);
             }
         }
-        prev_[pid] = {ti.pti_total_user, ti.pti_total_system, now};
+        current[pid] = {ti.pti_total_user, ti.pti_total_system};
 
         ProcessNode node;
         node.id = pid;
@@ -91,8 +93,11 @@ void ProcessProvider::tick(MetricsSnapshot& snapshot) {
         nodes.push_back(std::move(node));
     }
 
-    std::sort(nodes.begin(), nodes.end(),
-              [](const ProcessNode& a, const ProcessNode& b) { return a.cpu_percent > b.cpu_percent; });
+    prev_ = std::move(current);
+    std::sort(nodes.begin(), nodes.end(), [](const ProcessNode& a, const ProcessNode& b) {
+        if (a.cpu_percent != b.cpu_percent) return a.cpu_percent > b.cpu_percent;
+        return a.mem_bytes > b.mem_bytes;
+    });
     if (nodes.size() > 256) nodes.resize(256);
 
     snapshot.process_graph.nodes = std::move(nodes);

@@ -1,6 +1,10 @@
 #include "sysscope/anomaly.hpp"
 #include "sysscope/metrics_codec.hpp"
 #include "sysscope/ring_buffer.hpp"
+#include "sysscope/provider_factory.hpp"
+
+#include <sqlite3.h>
+#include <thread>
 #include "sysscope/types.hpp"
 #include "sysscope/util.hpp"
 
@@ -35,6 +39,23 @@ static void test_ring_buffer() {
     snap.cpu.user_percent = 10;
     EXPECT(store->append(snap), "append");
     EXPECT(store->disk_usage_bytes() > 0, "has data");
+    store->close();
+
+    sqlite3* legacy = nullptr;
+    EXPECT(sqlite3_open(path.c_str(), &legacy) == SQLITE_OK, "open legacy database");
+    const char* sql = "INSERT INTO metrics (kind, timestamp, payload) "
+                      "VALUES ('cpu', strftime('%s', 'now'), 'ts=1234');";
+    EXPECT(sqlite3_exec(legacy, sql, nullptr, nullptr, nullptr) == SQLITE_OK, "insert legacy record");
+    sqlite3_close(legacy);
+
+    EXPECT(store->open(path.string()), "reopen history database");
+    const auto history = store->cpu_history(snap.timestamp - 2);
+    EXPECT(history.size() == 1, "skip timestamp-only legacy records");
+    if (!history.empty()) {
+        EXPECT(history.front().timestamp == snap.timestamp, "persist sample time");
+        EXPECT(history.front().percent == 10.0f, "persist CPU utilization");
+    }
+    EXPECT(store->cpu_history(snap.timestamp + 1).empty(), "exclude samples outside range");
     store->close();
     std::filesystem::remove(path);
 }
@@ -86,11 +107,26 @@ static void test_thermal_codec_partial_grid() {
     EXPECT(decoded->snapshot.thermal.die_temperature_grid[2].empty(), "empty third row preserved");
 }
 
+static void test_local_metrics() {
+    sysscope::MetricAggregator aggregator;
+    aggregator.set_providers(sysscope::make_real_providers());
+    aggregator.collect();
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    const auto snapshot = aggregator.collect();
+    EXPECT(snapshot.has_cpu && !snapshot.cpu.per_core_percent.empty(), "collect live CPU counters");
+    EXPECT(snapshot.cpu.total_used() >= 0 && snapshot.cpu.total_used() <= 100.01, "valid CPU percentage");
+    EXPECT(snapshot.has_memory && snapshot.memory.total_bytes > 0, "collect live memory");
+    EXPECT(snapshot.has_thermal && !snapshot.thermal.pressure.empty(), "collect native thermal pressure");
+    EXPECT(snapshot.thermal.die_temperature_grid.empty(), "live sample excludes a simulated heatmap");
+    aggregator.stop();
+}
+
 int main() {
     test_anomaly();
     test_ring_buffer();
     test_thermal_codec_roundtrip();
     test_thermal_codec_partial_grid();
+    test_local_metrics();
     if (failures == 0) std::printf("All tests passed.\n");
     else std::printf("%d test(s) failed.\n", failures);
     return failures == 0 ? 0 : 1;

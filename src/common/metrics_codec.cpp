@@ -1,6 +1,6 @@
 #include "sysscope/metrics_codec.hpp"
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <arpa/inet.h>
 #include <cerrno>
@@ -94,6 +94,7 @@ static json snapshot_to_json(const MetricsSnapshot& s) {
                         {"cpu_temp", s.thermal.cpu_die_temp_celsius},
                         {"gpu_temp", s.thermal.gpu_die_temp_celsius},
                         {"fan_rpm", s.thermal.fan_rpm},
+                        {"pressure", s.thermal.pressure},
                         {"die_temperature_grid", grid_to_json(s.thermal.die_temperature_grid)}};
     }
     if (s.has_process_graph) {
@@ -142,6 +143,7 @@ static MetricsSnapshot snapshot_from_json(const json& j) {
     }
     if (j.contains("thermal")) {
         const auto& t = j["thermal"];
+        s.thermal.pressure = t.value("pressure", std::string{});
         for (const auto& c : t.value("clusters", json::array())) {
             ClusterThermal cl;
             cl.name = c.value("name", "");

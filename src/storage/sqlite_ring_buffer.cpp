@@ -13,18 +13,19 @@
 
 namespace sysscope {
 
-HistoryRange HistoryRange::last_minutes(int minutes) {
-    const double end = now_seconds();
-    return {end - minutes * 60.0, end};
-}
-
 class SQLiteRingBufferStore : public IRingBufferStore {
 public:
     explicit SQLiteRingBufferStore(RingBufferConfig cfg) : config_(cfg) {}
 
+    ~SQLiteRingBufferStore() override { close(); }
+
     bool open(const std::string& path) override {
         if (db_) return true;
-        if (sqlite3_open(path.c_str(), &db_) != SQLITE_OK) return false;
+        if (sqlite3_open(path.c_str(), &db_) != SQLITE_OK) {
+            close();
+            return false;
+        }
+        sqlite3_busy_timeout(db_, 250);
         const char* sql = R"(
             CREATE TABLE IF NOT EXISTS metrics (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,7 +35,9 @@ public:
             );
             CREATE INDEX IF NOT EXISTS idx_metrics_ts ON metrics(timestamp);
         )";
-        return exec(sql);
+        if (exec(sql)) return true;
+        close();
+        return false;
     }
 
     void close() override {
@@ -46,18 +49,37 @@ public:
 
     bool append(const MetricsSnapshot& snapshot) override {
         if (!db_) return false;
-        char buf[64];
-        std::snprintf(buf, sizeof(buf), "%.6f", snapshot.timestamp);
-        const std::string payload = std::string("ts=") + buf;  // stub serialization
+        if (!snapshot.has_cpu) return true;
         sqlite3_stmt* stmt = nullptr;
-        const char* sql = "INSERT INTO metrics (kind, timestamp, payload) VALUES ('cpu', ?, ?);";
+        const char* sql = "INSERT INTO metrics (kind, timestamp, payload) VALUES ('cpu_percent', ?, ?);";
         if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
         sqlite3_bind_double(stmt, 1, snapshot.timestamp);
-        sqlite3_bind_text(stmt, 2, payload.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 2, snapshot.cpu.total_used());
         const bool ok = sqlite3_step(stmt) == SQLITE_DONE;
         sqlite3_finalize(stmt);
-        if (ok) evict_if_needed();
-        return ok;
+        return ok && evict_if_needed();
+    }
+
+    std::vector<CpuSample> cpu_history(double since) const override {
+        if (!db_) return {};
+        sqlite3_stmt* stmt = nullptr;
+        const char* sql = R"(
+            SELECT timestamp, payload FROM (
+                SELECT timestamp, payload FROM metrics
+                WHERE kind = 'cpu_percent' AND timestamp >= ?
+                ORDER BY timestamp DESC LIMIT ?
+            ) ORDER BY timestamp
+        )";
+        if (sqlite3_prepare_v2(db_, sql, -1, &stmt, nullptr) != SQLITE_OK) return {};
+        sqlite3_bind_double(stmt, 1, since);
+        sqlite3_bind_int(stmt, 2, config_.max_samples_per_series);
+        std::vector<CpuSample> samples;
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            samples.push_back({sqlite3_column_double(stmt, 0),
+                               static_cast<float>(sqlite3_column_double(stmt, 1))});
+        }
+        sqlite3_finalize(stmt);
+        return samples;
     }
 
     bool evict_if_needed() override {

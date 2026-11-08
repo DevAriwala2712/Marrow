@@ -11,10 +11,10 @@ public:
     void tick(MetricsSnapshot& snapshot) override;
 
 private:
-    bool initialized_ = false;
-    int cpu_count_ = 0;
-    std::vector<unsigned int> prev_ticks_;  // 4 ticks per cpu: user,nice,sys,idle
-    double last_sample_time_ = 0;
+    struct Ticks {
+        unsigned int user, nice, system, idle;
+    };
+    std::vector<Ticks> previous_;
 };
 
 }  // namespace sysscope

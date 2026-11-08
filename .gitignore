@@ -5,3 +5,8 @@ sysscope-cli
 sysscope-tests
 *.o
 .DS_Store
+
+/build/
+/dist/
+/.idea/
+/imgui.ini

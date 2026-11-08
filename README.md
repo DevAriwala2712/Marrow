@@ -1,79 +1,73 @@
-<img width="250" height="250" alt="screen" src="https://github.com/user-attachments/assets/82c54dbf-468b-4c93-9abd-c7fc4dbc088a" />
+<p align="center">
+  <img src="assets/marrow-logo.png" alt="Marrow logo" width="112">
+</p>
 
-# Marrow 
+# Marrow
 
-macOS system monitor scaffold — **C++17 + Dear ImGui + GLFW + OpenGL**. No Swift.
+A macOS system monitor with a live dashboard, local CPU history, and terminal exports. It runs in your user session without a privileged helper.
 
-## Benefits over `btop`
+[Download the latest release](https://github.com/DevAriwala2712/Marrow/releases/latest) · macOS 13+ · Apple silicon and Intel
 
-While `btop` is a fantastic terminal-based system monitor, Marrow provides several distinct advantages by leveraging native GUI technologies and a daemon-based architecture:
+![Marrow overview with CPU, memory, network and disk cards, a CPU chart, and a process table.](docs/images/overview.png)
 
-1. **Hardware-Accelerated GUI**: Marrow uses OpenGL and Dear ImGui for buttery-smooth 60fps rendering. `btop` is confined to the terminal (ncurses/TTY), which limits graphical fidelity and UI responsiveness.
-2. **Rich Visualizations**: Because it isn't restricted by character cells, Marrow can render complex charts, scatter plots, and fine-grained timelines.
-3. **Dedicated Daemon Architecture**: Marrow separates the UI from a privileged helper daemon. This allows it to securely collect deep system metrics (via IOKit, Endpoint Security, SMJobBless) while the GUI runs completely unprivileged. With `btop`, you often have to run the entire application as root to get advanced metrics.
-4. **Historical DVR (Ring Buffer)**: Marrow includes an SQLite-backed ring buffer storing up to 30 minutes (200MB) of metrics. You can seamlessly scrub back in time to view historical anomalies.
-5. **Anomaly Detection (Z-Score)**: Built-in statistical analysis highlights unexpected spikes automatically.
-6. **Extensible CLI**: Includes a dedicated CLI (`marrow-cli`) that outputs JSON or Prometheus formats for seamless integration with external monitoring systems.
+## Install from Terminal
 
-## Build
+```sh
+curl -fsSLo marrow-install.sh https://github.com/DevAriwala2712/Marrow/releases/latest/download/install.sh
+bash marrow-install.sh
+open "$HOME/Applications/Marrow.app"
+```
 
-Requires: `g++`, GLFW, SQLite3, OpenGL (Homebrew: `brew install glfw sqlite`).
+The installer checks the archive's SHA-256 and app signature, then installs to `~/Applications` and links `marrow-cli` in `~/.local/bin`. Run the same commands to upgrade. The release uses an ad hoc signature and is distributed without Apple notarization.
 
-```bash
-cd SysScope
-make          # sysscope-app, sysscope-helper, sysscope-cli
+## What Marrow shows
+
+- **Overview** shows CPU utilization, physical memory, network receive rate, disk write rate, and top processes.
+- **Processes** filters visible processes by name or PID and shows CPU share, resident memory, and parent IDs.
+- **Network and Disk** show aggregate throughput. Disk rates depend on the counters exposed by your storage drivers.
+- **Thermal** shows the thermal pressure macOS reports. The die map and accelerator figures are available as simulated readings in demo mode.
+- **History** stores up to 30 minutes of CPU samples locally. Choose a 1, 5, or 30-minute window and hover the graph to inspect a sample.
+
+Both screenshots show demo data. To try it, launch Marrow with `--demo`.
+
+```sh
+open -n "$HOME/Applications/Marrow.app" --args --demo
+```
+
+<details>
+<summary>Thermal demo screenshot</summary>
+
+![Marrow Thermal in demo mode with a simulated eight-by-eight temperature map.](docs/images/thermal-demo.png)
+
+</details>
+
+## Terminal metrics
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+marrow-cli
+marrow-cli --format prometheus
+```
+
+The CLI takes a live snapshot each time it runs. JSON includes CPU, memory, network, disk, and thermal pressure when available. Prometheus text output includes CPU user percentage and used memory.
+
+## Build from source
+
+Install the Xcode Command Line Tools and CMake 3.24 or later. CMake fetches pinned versions of GLFW, Dear ImGui, and nlohmann/json at configure time.
+
+```sh
+git clone https://github.com/DevAriwala2712/Marrow.git
+cd Marrow
 make test
+open build/Marrow.app
+./build/marrow-cli --help
 ```
 
-Run the GUI:
+To build the universal release archive and its checksum, configure both architectures and run the packaging script.
 
-```bash
-./sysscope-app
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES='arm64;x86_64'
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+./scripts/package.sh build
 ```
-
-CLI:
-
-```bash
-./sysscope-cli ping
-./sysscope-cli --format prometheus
-```
-
-Helper daemon (stub loop):
-
-```bash
-./sysscope-helper
-```
-
-## Layout
-
-| Path | Purpose |
-|------|---------|
-| `include/sysscope/` | Types, `IMetricProvider`, stubs, anomaly, IPC, ring buffer |
-| `src/app/` | ImGui main window + sidebar sections |
-| `src/helper/` | Privileged helper scaffold |
-| `src/cli/` | `sysscope` JSON/Prometheus CLI |
-| `src/storage/` | SQLite ring buffer (200 MB / 30 min) |
-| `tests/` | Native test runner (`make test`) |
-
-Uses vendored **ImGui** from `../imgui` (same as `mac_stats_gui`).
-
-## Architecture
-
-- **GUI** (`sysscope-app`): unprivileged; stub metric providers by default.
-- **Helper** (`sysscope-helper`): placeholder for SMJobBless / IOKit / Endpoint Security.
-- **CLI** (`sysscope-cli`): shares stub `HelperClient` until real IPC is wired.
-- **Ring buffer**: `IRingBufferStore` + SQLite implementation.
-
-Real collectors (powermetrics, FSEvents, Network Extension, etc.) plug in by implementing `IMetricProvider` in the helper.
-
-## Targets (original spec → C++)
-
-| Feature | Status |
-|---------|--------|
-| Process / Network / Thermal / Disk / Timeline / Settings UI | Stub panels in ImGui |
-| Menubar sparklines | Inline CPU sparkline in app title bar |
-| MetricProvider + stubs | `include/sysscope/stub_providers.hpp` |
-| Typed IPC | `include/sysscope/ipc.hpp` (in-process stub) |
-| Ring buffer DVR | SQLite store + Timeline scrub UI |
-| Anomaly Z-score | `include/sysscope/anomaly.hpp` + tests |
-| Metal 60fps charts | Use ImGui plots now; Metal can replace later |

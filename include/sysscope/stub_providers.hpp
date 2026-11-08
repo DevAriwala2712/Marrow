@@ -109,12 +109,12 @@ public:
     MetricKind kind() const override { return MetricKind::ProcessGraph; }
     void tick(MetricsSnapshot& s) override {
         s.process_graph.nodes = {
-            {1, "launchd", -1, 120, 4},
-            {100, "WindowServer", 1, 340, 12},
-            {200, "SysScope", 1, 45, 2},
-            {201, "SysScopeHelper", 200, 28, 1},
-            {300, "Safari", 1, 890, 6},
-            {301, "com.apple.WebKit", 300, 210, 3},
+            {181, "WindowServer", 1, 0, 0, 9.8, 426ULL << 20, "running"},
+            {835, "Safari", 1, 0, 0, 6.2, 682ULL << 20, "running"},
+            {912, "Marrow", 1, 0, 0, 2.4, 38ULL << 20, "sleeping"},
+            {904, "Terminal", 1, 0, 0, 1.6, 96ULL << 20, "sleeping"},
+            {921, "com.apple.WebKit", 835, 0, 0, 0.7, 218ULL << 20, "sleeping"},
+            {1, "launchd", -1, 0, 0, 0.1, 15ULL << 20, "running"},
         };
         s.has_process_graph = true;
     }

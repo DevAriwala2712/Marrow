@@ -3,6 +3,7 @@
 #include "sysscope/types.hpp"
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -14,10 +15,9 @@ struct RingBufferConfig {
     int max_samples_per_series = 50000;
 };
 
-struct HistoryRange {
-    double start = 0;
-    double end = 0;
-    static HistoryRange last_minutes(int minutes);
+struct CpuSample {
+    double timestamp;
+    float percent;
 };
 
 class IRingBufferStore {
@@ -26,6 +26,7 @@ public:
     virtual bool open(const std::string& path) = 0;
     virtual void close() = 0;
     virtual bool append(const MetricsSnapshot& snapshot) = 0;
+    virtual std::vector<CpuSample> cpu_history(double since) const = 0;
     virtual bool evict_if_needed() = 0;
     virtual int disk_usage_bytes() const = 0;
 };

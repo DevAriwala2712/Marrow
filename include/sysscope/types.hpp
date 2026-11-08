@@ -87,6 +87,7 @@ struct ThermalMetrics {
     double gpu_die_temp_celsius = 0;
     int fan_rpm = -1;
     std::vector<std::vector<double>> die_temperature_grid;
+    std::string pressure;
 };
 
 struct ProcessNode {

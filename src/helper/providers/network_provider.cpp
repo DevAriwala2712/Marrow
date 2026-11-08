@@ -25,10 +25,12 @@ void NetworkProvider::tick(MetricsSnapshot& snapshot) {
 
     char* next = buf.data();
     char* lim = buf.data() + len;
-    while (next < lim) {
+    while (lim - next >= 4) {
         auto* ifm = reinterpret_cast<if_msghdr2*>(next);
-        next += ifm->ifm_msglen;
-        if (ifm->ifm_type != RTM_IFINFO2) continue;
+        const auto message_size = ifm->ifm_msglen;
+        if (message_size < 4 || message_size > lim - next) break;
+        next += message_size;
+        if (ifm->ifm_type != RTM_IFINFO2 || message_size < sizeof(if_msghdr2)) continue;
 
         char ifname[IFNAMSIZ] = {};
         if (if_indextoname(ifm->ifm_index, ifname) == nullptr) continue;
@@ -50,8 +52,8 @@ void NetworkProvider::tick(MetricsSnapshot& snapshot) {
     const double now = now_seconds();
     if (has_prev_ && now > prev_at_) {
         const double dt = now - prev_at_;
-        snapshot.network.bytes_in_per_sec = static_cast<double>(total_in - prev_in_) / dt;
-        snapshot.network.bytes_out_per_sec = static_cast<double>(total_out - prev_out_) / dt;
+        snapshot.network.bytes_in_per_sec = total_in >= prev_in_ ? static_cast<double>(total_in - prev_in_) / dt : 0;
+        snapshot.network.bytes_out_per_sec = total_out >= prev_out_ ? static_cast<double>(total_out - prev_out_) / dt : 0;
     }
     prev_in_ = total_in;
     prev_out_ = total_out;

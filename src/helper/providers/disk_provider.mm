@@ -27,11 +27,13 @@ void DiskProvider::tick(MetricsSnapshot& snapshot) {
         kIOMainPortDefault, IOServiceMatching("IOBlockStorageDriver"), &iter);
     if (kr != KERN_SUCCESS) return;
 
+    bool has_statistics = false;
     for (io_object_t service = IOIteratorNext(iter); service;
          service = IOIteratorNext(iter)) {
         CFDictionaryRef stats = static_cast<CFDictionaryRef>(IORegistryEntryCreateCFProperty(
             service, CFSTR("Statistics"), kCFAllocatorDefault, 0));
         if (stats) {
+            has_statistics = true;
             read_bytes += cf_number(stats, CFSTR("Bytes (Read)"));
             write_bytes += cf_number(stats, CFSTR("Bytes (Write)"));
             CFRelease(stats);
@@ -39,12 +41,13 @@ void DiskProvider::tick(MetricsSnapshot& snapshot) {
         IOObjectRelease(service);
     }
     IOObjectRelease(iter);
+    if (!has_statistics) return;
 
     const double now = now_seconds();
     if (has_prev_ && now > prev_at_) {
         const double dt = now - prev_at_;
-        snapshot.disk.read_bytes_per_sec = static_cast<double>(read_bytes - prev_read_) / dt;
-        snapshot.disk.write_bytes_per_sec = static_cast<double>(write_bytes - prev_write_) / dt;
+        snapshot.disk.read_bytes_per_sec = read_bytes >= prev_read_ ? static_cast<double>(read_bytes - prev_read_) / dt : 0;
+        snapshot.disk.write_bytes_per_sec = write_bytes >= prev_write_ ? static_cast<double>(write_bytes - prev_write_) / dt : 0;
     }
     prev_read_ = read_bytes;
     prev_write_ = write_bytes;
